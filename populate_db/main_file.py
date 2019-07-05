@@ -19,6 +19,7 @@ from table_sku_master import create_sku_master
 from table_customer_sku_details import create_customer_sku_details
 from table_territory_wise_details import create_territory_wise_details
 from table_customer_wise_details import create_customer_wise_details
+from table_sku_wise_details import create_sku_wise_details
 
 
 input_df = pd.read_excel('csv_files\\Bellary SD Sales.xlsx')
@@ -60,6 +61,12 @@ customer_wise_details_df = create_customer_wise_details(input_df, customer_maste
 customer_wise_details_df.replace([np.inf, -np.inf], np.nan, inplace=True)
 customer_wise_details_df.fillna('NA').to_csv('csv_files\\customer_wise_details.csv', index=False)
 
+# Create 'sku_wise_details' table
+sku_wise_details_df = create_sku_wise_details(input_df, sku_master_df)
+sku_wise_details_df.replace([np.inf, -np.inf], np.nan, inplace=True)
+sku_wise_details_df.fillna('NA').to_csv('csv_files\\sku_wise_details.csv', index=False)
+
+
 # Save data in mysql database
 option = 'append'
 # How to behave if the table already exists.
@@ -84,3 +91,4 @@ update_database('sku_master', sku_master_df, option)
 update_database('customer_sku_details', customer_sku_details_df, option)
 update_database('territory_wise_details', territory_wise_details_df, option)
 update_database('customer_wise_details', customer_wise_details_df, option)
+update_database('sku_wise_details', sku_wise_details_df, option)
