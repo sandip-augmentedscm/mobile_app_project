@@ -5,7 +5,7 @@ import pymysql
 from sqlalchemy import exc, create_engine
 engine = create_engine('mysql+pymysql://root:123456@localhost:3306/sales_db',\
                        echo=False)
-
+import time
 from statistics import mean, stdev
 from datetime import timedelta
 import warnings
@@ -74,21 +74,31 @@ option = 'append'
 # 'replace': Drop the table before inserting new values.
 # 'append': Insert new values to the existing table.
 
-def update_database(table_name, df, option):
-    num_rows = len(df)
-    for i in range(num_rows):
-        try:
-            # Insert row
-            df.iloc[i:i+1].to_sql(name=table_name, con=engine, if_exists=option, index=False)
-        except exc.IntegrityError:
-            # Ignore duplicates
-            pass
+def update_database(table_name, unique_key, df, option):
+    query1 = 'SELECT * FROM {}'.format(table_name)
+    table_copy_df = pd.read_sql(query1, con=engine)
+    
+    cond = table_copy_df[unique_key].isin(df[unique_key]) == True
+    df.drop(df[cond].index, inplace = True)
+    
+    df.to_sql(name=table_name, con=engine, if_exists=option, index=False)
+    
+start = time.clock()
+update_database('salesperson_master', ['salesperson_ID', 'salesperson_name'],\
+                salesperson_master_df, option)
+update_database('territory_master', ['territory_ID', 'salesperson_ID'],\
+                territory_master_df, option)
+update_database('customer_master', ['customer_ID', 'customer_code'],\
+                customer_master_df, option)
+update_database('sku_master', ['sku_ID', 'sku_code'], sku_master_df, option)
+update_database('customer_sku_details', ['customer_ID', 'sku_ID', 'period'],\
+                customer_sku_details_df, option)
+update_database('territory_wise_details', ['territory_ID', 'period'],\
+                territory_wise_details_df, option)
+update_database('customer_wise_details', ['customer_ID', 'period'],\
+                customer_wise_details_df, option)
+update_database('sku_wise_details', ['sku_ID', 'period'],\
+                sku_wise_details_df, option)
+end = time.clock()
 
-update_database('salesperson_master', salesperson_master_df, option)
-update_database('territory_master', territory_master_df, option)
-update_database('customer_master', customer_master_df, option)
-update_database('sku_master', sku_master_df, option)
-update_database('customer_sku_details', customer_sku_details_df, option)
-update_database('territory_wise_details', territory_wise_details_df, option)
-update_database('customer_wise_details', customer_wise_details_df, option)
-update_database('sku_wise_details', sku_wise_details_df, option)
+print('database updating time = ', end - start)
